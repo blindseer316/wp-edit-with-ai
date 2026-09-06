@@ -14,43 +14,150 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WP_Edit_With_AI_Gemini_Client {
 
 	const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
+	const MAX_TOOL_TURNS = 6;
 
 	private array $keys;
 	private string $model;
 
 	public function __construct() {
-		$options   = WP_Edit_With_AI_Settings::get_options();
+		$options    = WP_Edit_With_AI_Settings::get_options();
 		$this->keys = array_values( array_filter( array( $options['gemini_key_1'], $options['gemini_key_2'] ) ) );
 		$this->model = $options['model'] ?: 'gemini-flash-latest';
 	}
 
 	/**
-	 * Sends a single-turn text prompt, trying each configured key in order.
-	 * Falls through to the next key on auth/quota errors (401/403/429).
+	 * Runs a full chat turn: sends the user message with the content-tool
+	 * definitions, executes any function calls Gemini requests via
+	 * WP_Edit_With_AI_Content_Tools, feeds the results back, and repeats
+	 * until Gemini returns a final text reply (or MAX_TOOL_TURNS is hit).
 	 *
-	 * @return array { ok: bool, text?: string, error?: string, key_index?: int }
+	 * @return array { ok, text?, error?, actions: array of {tool,args,result} }
 	 */
-	public function generate_text( string $prompt, array $tools = array() ): array {
+	public function run_conversation( string $user_message, WP_Edit_With_AI_Content_Tools $tools ): array {
 		if ( empty( $this->keys ) ) {
 			return array(
-				'ok'    => false,
-				'error' => 'No Gemini API key configured. Add one under WP Edit With AI > Settings.',
+				'ok'      => false,
+				'error'   => 'No Gemini API key configured. Add one under WP Edit With AI > Settings.',
+				'actions' => array(),
 			);
 		}
 
-		$body = array(
-			'contents' => array(
-				array(
-					'role'  => 'user',
-					'parts' => array( array( 'text' => $prompt ) ),
-				),
+		$contents = array(
+			array(
+				'role'  => 'user',
+				'parts' => array( array( 'text' => $user_message ) ),
 			),
 		);
 
-		if ( ! empty( $tools ) ) {
-			$body['tools'] = array( array( 'function_declarations' => $tools ) );
+		$tool_declarations = array( array( 'function_declarations' => WP_Edit_With_AI_Content_Tools::get_tool_declarations() ) );
+		$actions           = array();
+
+		for ( $turn = 0; $turn < self::MAX_TOOL_TURNS; $turn++ ) {
+			$response = $this->request_with_rotation(
+				array(
+					'contents' => $contents,
+					'tools'    => $tool_declarations,
+				)
+			);
+
+			if ( ! $response['ok'] ) {
+				return array(
+					'ok'      => false,
+					'error'   => $response['error'],
+					'actions' => $actions,
+				);
+			}
+
+			$function_call = null;
+			$text          = '';
+
+			foreach ( $response['parts'] as $part ) {
+				if ( isset( $part['functionCall'] ) ) {
+					$function_call = $part['functionCall'];
+				} elseif ( isset( $part['text'] ) ) {
+					$text .= $part['text'];
+				}
+			}
+
+			if ( ! $function_call ) {
+				return array(
+					'ok'      => true,
+					'text'    => $text,
+					'actions' => $actions,
+				);
+			}
+
+			$name   = $function_call['name'] ?? '';
+			$args   = $function_call['args'] ?? array();
+			$result = $tools->dispatch( $name, $args );
+
+			$actions[] = array(
+				'tool'   => $name,
+				'args'   => $args,
+				'result' => $result,
+			);
+
+			$contents[] = array(
+				'role'  => 'model',
+				'parts' => array( array( 'functionCall' => $function_call ) ),
+			);
+			$contents[] = array(
+				'role'  => 'function',
+				'parts' => array(
+					array(
+						'functionResponse' => array(
+							'name'     => $name,
+							'response' => $result,
+						),
+					),
+				),
+			);
 		}
 
+		return array(
+			'ok'      => false,
+			'error'   => 'Reached the tool-call limit without a final answer. The request may be too complex, or a tool call is looping.',
+			'actions' => $actions,
+		);
+	}
+
+	/**
+	 * Simple single-turn text prompt with no tools, used by the Settings
+	 * page "Test API Connection" check via test_each_key().
+	 */
+	private function generate_text( string $prompt ): array {
+		$response = $this->request_with_rotation(
+			array(
+				'contents' => array(
+					array(
+						'role'  => 'user',
+						'parts' => array( array( 'text' => $prompt ) ),
+					),
+				),
+			)
+		);
+
+		if ( ! $response['ok'] ) {
+			return $response;
+		}
+
+		$text = '';
+		foreach ( $response['parts'] as $part ) {
+			if ( isset( $part['text'] ) ) {
+				$text .= $part['text'];
+			}
+		}
+
+		return array( 'ok' => true, 'text' => $text );
+	}
+
+	/**
+	 * Tries each configured key in order for one request, falling through to
+	 * the next key only on auth/quota-type failures (401/403/429).
+	 *
+	 * @return array { ok: bool, parts?: array, error?: string, key_index?: int }
+	 */
+	private function request_with_rotation( array $body ): array {
 		$last_error = '';
 
 		foreach ( $this->keys as $index => $key ) {
@@ -63,7 +170,6 @@ class WP_Edit_With_AI_Gemini_Client {
 
 			$last_error = $response['error'];
 
-			// Only fall through to the next key on auth/quota-type failures.
 			if ( ! in_array( $response['status'] ?? 0, array( 401, 403, 429 ), true ) ) {
 				break;
 			}
@@ -106,9 +212,9 @@ class WP_Edit_With_AI_Gemini_Client {
 			);
 		}
 
-		$text = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
+		$parts = $decoded['candidates'][0]['content']['parts'] ?? null;
 
-		if ( null === $text ) {
+		if ( null === $parts ) {
 			return array(
 				'ok'    => false,
 				'error' => 'Unexpected response shape from Gemini API.',
@@ -116,8 +222,8 @@ class WP_Edit_With_AI_Gemini_Client {
 		}
 
 		return array(
-			'ok'   => true,
-			'text' => $text,
+			'ok'    => true,
+			'parts' => $parts,
 		);
 	}
 
@@ -157,10 +263,22 @@ class WP_Edit_With_AI_Gemini_Client {
 				)
 			);
 
+			$message = 'Unexpected response.';
+			if ( $response['ok'] ) {
+				foreach ( $response['parts'] as $part ) {
+					if ( isset( $part['text'] ) ) {
+						$message = trim( $part['text'] );
+						break;
+					}
+				}
+			} else {
+				$message = $response['error'];
+			}
+
 			$results[] = array(
 				'label'   => 'Key ' . ( $index + 1 ) . ' (' . $this->model . ')',
 				'ok'      => $response['ok'],
-				'message' => $response['ok'] ? trim( $response['text'] ) : $response['error'],
+				'message' => $message,
 			);
 		}
 

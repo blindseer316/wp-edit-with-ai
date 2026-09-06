@@ -4,7 +4,7 @@ Tags: ai, chat, editing, content, assistant
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 
 Chat-driven content editing for non-technical WordPress clients. No MCP connector, no external app, no subscription required — just a chat box that makes the edit directly.
@@ -21,6 +21,10 @@ Content types supported, in build order:
 3. Elementor widgets (`_elementor_data`)
 
 == Changelog ==
+
+= 0.3.0 =
+* Added the actual tool-calling loop: Gemini can now call find_pages, get_page_content, and update_page_content against the live database, looping until it gives a final reply.
+* Chat UI now shows which tool calls ran and their result (success/error) for each message, so edits are visible/verifiable, not just the AI's text reply.
 
 = 0.2.0 =
 * Added Gemini API integration (generateContent, model configurable, defaults to gemini-flash-latest).

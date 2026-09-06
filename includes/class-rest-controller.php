@@ -46,21 +46,35 @@ class WP_Edit_With_AI_REST_Controller {
 	}
 
 	/**
-	 * Handles a chat turn. Tool-calling loop (function_declarations wired to
-	 * WP_Edit_With_AI_Content_Tools) lands in the next milestone — this sends
-	 * the message to Gemini and returns its plain-text reply.
+	 * Handles a chat turn: runs the Gemini tool-calling loop, which may
+	 * execute one or more WP_Edit_With_AI_Content_Tools calls (find_pages,
+	 * get_page_content, update_page_content) against the live database
+	 * before returning Gemini's final text reply.
 	 */
 	public function handle_chat( WP_REST_Request $request ) {
 		$message = $request->get_param( 'message' );
 
 		$client   = new WP_Edit_With_AI_Gemini_Client();
-		$response = $client->generate_text( $message );
+		$tools    = new WP_Edit_With_AI_Content_Tools();
+		$response = $client->run_conversation( $message, $tools );
 
 		if ( ! $response['ok'] ) {
-			return new WP_REST_Response( array( 'reply' => 'Error: ' . $response['error'] ), 200 );
+			return new WP_REST_Response(
+				array(
+					'reply'   => 'Error: ' . $response['error'],
+					'actions' => $response['actions'],
+				),
+				200
+			);
 		}
 
-		return new WP_REST_Response( array( 'reply' => $response['text'] ), 200 );
+		return new WP_REST_Response(
+			array(
+				'reply'   => $response['text'],
+				'actions' => $response['actions'],
+			),
+			200
+		);
 	}
 
 	public function handle_test_connection( WP_REST_Request $request ) {

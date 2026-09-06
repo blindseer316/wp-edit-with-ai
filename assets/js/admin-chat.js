@@ -11,6 +11,22 @@
 		messagesEl.scrollTop = messagesEl.scrollHeight;
 	}
 
+	function appendActions( actions ) {
+		if ( ! actions || ! actions.length ) {
+			return;
+		}
+		const el = document.createElement( 'div' );
+		el.className = 'wp-edit-with-ai-message wp-edit-with-ai-message--actions';
+		el.innerHTML = actions
+			.map( function ( a ) {
+				const ok = a.result && a.result.error ? '❌' : '✅';
+				return ok + ' <strong>' + a.tool + '</strong>(' + JSON.stringify( a.args ) + ')';
+			} )
+			.join( '<br>' );
+		messagesEl.appendChild( el );
+		messagesEl.scrollTop = messagesEl.scrollHeight;
+	}
+
 	async function sendMessage() {
 		const message = inputEl.value.trim();
 		if ( ! message ) {
@@ -30,6 +46,7 @@
 				body: JSON.stringify( { message } ),
 			} );
 			const data = await response.json();
+			appendActions( data.actions );
 			appendMessage( 'assistant', data.reply || 'No response.' );
 		} catch ( err ) {
 			appendMessage( 'assistant', 'Error: could not reach the server.' );
