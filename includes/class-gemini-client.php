@@ -101,8 +101,12 @@ class WP_Edit_With_AI_Gemini_Client {
 				'role'  => 'model',
 				'parts' => array( array( 'functionCall' => $function_call ) ),
 			);
+			// Gemini's current API expects the function result back as a
+			// "user" turn, not a "function" role (that's the older/deprecated
+			// shape and is what was producing the "Role 'function' is not
+			// supported" error).
 			$contents[] = array(
-				'role'  => 'function',
+				'role'  => 'user',
 				'parts' => array(
 					array(
 						'functionResponse' => array(

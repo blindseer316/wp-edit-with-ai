@@ -4,7 +4,7 @@ Tags: ai, chat, editing, content, assistant
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 
 Chat-driven content editing for non-technical WordPress clients. No MCP connector, no external app, no subscription required — just a chat box that makes the edit directly.
@@ -21,6 +21,9 @@ Content types supported, in build order:
 3. Elementor widgets (`_elementor_data`)
 
 == Changelog ==
+
+= 0.4.1 =
+* Fix: tool-call results were sent back to Gemini with role "function", which the current API rejects ("Role 'function' is not supported"). Changed to role "user" per Gemini's current REST format, unblocking the find_pages/get_page_content/update_page_content loop.
 
 = 0.4.0 =
 * Removed the separate Settings submenu/page. Settings now render inline on the main WP Edit With AI page (visible only to users with manage_options), so there is only one registered menu item and one URL.
