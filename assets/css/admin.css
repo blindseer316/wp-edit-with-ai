@@ -1,0 +1,56 @@
+.wp-edit-with-ai-wrap .wp-edit-with-ai-version {
+	font-size: 13px;
+	font-weight: 400;
+	color: #666;
+	margin-left: 8px;
+}
+
+#wp-edit-with-ai-chat {
+	max-width: 720px;
+	margin-top: 16px;
+}
+
+.wp-edit-with-ai-messages {
+	min-height: 240px;
+	max-height: 420px;
+	overflow-y: auto;
+	border: 1px solid #dcdcde;
+	background: #fff;
+	padding: 12px;
+	margin-bottom: 8px;
+}
+
+.wp-edit-with-ai-message {
+	padding: 6px 10px;
+	margin-bottom: 6px;
+	border-radius: 4px;
+	max-width: 85%;
+}
+
+.wp-edit-with-ai-message--user {
+	background: #2271b1;
+	color: #fff;
+	margin-left: auto;
+}
+
+.wp-edit-with-ai-message--assistant {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.wp-edit-with-ai-input-row {
+	display: flex;
+	gap: 8px;
+}
+
+.wp-edit-with-ai-input-row textarea {
+	flex: 1;
+	min-height: 60px;
+	resize: vertical;
+}
+
+.wp-edit-with-ai-footer {
+	color: #888;
+	font-size: 12px;
+	margin-top: 24px;
+}
