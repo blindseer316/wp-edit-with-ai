@@ -68,18 +68,22 @@ class WP_Edit_With_AI_Gemini_Client {
 				);
 			}
 
-			$function_call = null;
-			$text          = '';
+			$function_call_part = null;
+			$text               = '';
 
 			foreach ( $response['parts'] as $part ) {
 				if ( isset( $part['functionCall'] ) ) {
-					$function_call = $part['functionCall'];
+					// Keep the whole part as Gemini sent it (unmodified) —
+					// thinking models attach a thoughtSignature alongside
+					// functionCall that must be echoed back verbatim on the
+					// next turn, or the API rejects the request.
+					$function_call_part = $part;
 				} elseif ( isset( $part['text'] ) ) {
 					$text .= $part['text'];
 				}
 			}
 
-			if ( ! $function_call ) {
+			if ( ! $function_call_part ) {
 				return array(
 					'ok'      => true,
 					'text'    => $text,
@@ -87,9 +91,10 @@ class WP_Edit_With_AI_Gemini_Client {
 				);
 			}
 
-			$name   = $function_call['name'] ?? '';
-			$args   = $function_call['args'] ?? array();
-			$result = $tools->dispatch( $name, $args );
+			$function_call = $function_call_part['functionCall'];
+			$name          = $function_call['name'] ?? '';
+			$args          = $function_call['args'] ?? array();
+			$result        = $tools->dispatch( $name, $args );
 
 			$actions[] = array(
 				'tool'   => $name,
@@ -99,7 +104,7 @@ class WP_Edit_With_AI_Gemini_Client {
 
 			$contents[] = array(
 				'role'  => 'model',
-				'parts' => array( array( 'functionCall' => $function_call ) ),
+				'parts' => array( $function_call_part ),
 			);
 			// Gemini's current API expects the function result back as a
 			// "user" turn, not a "function" role (that's the older/deprecated

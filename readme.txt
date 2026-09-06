@@ -4,7 +4,7 @@ Tags: ai, chat, editing, content, assistant
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 
 Chat-driven content editing for non-technical WordPress clients. No MCP connector, no external app, no subscription required — just a chat box that makes the edit directly.
@@ -21,6 +21,9 @@ Content types supported, in build order:
 3. Elementor widgets (`_elementor_data`)
 
 == Changelog ==
+
+= 0.4.2 =
+* Fix: functionCall parts from Gemini's current (thinking-enabled) models carry a thoughtSignature that must be echoed back unmodified on the next turn. The client now preserves the whole part instead of rebuilding it, fixing "Function call is missing a thought_signature" errors.
 
 = 0.4.1 =
 * Fix: tool-call results were sent back to Gemini with role "function", which the current API rejects ("Role 'function' is not supported"). Changed to role "user" per Gemini's current REST format, unblocking the find_pages/get_page_content/update_page_content loop.
