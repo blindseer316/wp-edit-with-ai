@@ -241,6 +241,14 @@ class WP_Edit_With_AI_Gemini_Client {
 	}
 
 	/**
+	 * Alias so the REST controller can call test_connection() on either
+	 * provider client interchangeably.
+	 */
+	public function test_connection(): array {
+		return $this->test_each_key();
+	}
+
+	/**
 	 * Tests each configured key independently with a trivial prompt, used by
 	 * the Settings page "Test API Connection" button.
 	 *

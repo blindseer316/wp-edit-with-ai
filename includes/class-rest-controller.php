@@ -54,7 +54,7 @@ class WP_Edit_With_AI_REST_Controller {
 	public function handle_chat( WP_REST_Request $request ) {
 		$message = $request->get_param( 'message' );
 
-		$client   = new WP_Edit_With_AI_Gemini_Client();
+		$client   = WP_Edit_With_AI_Settings::get_active_client();
 		$tools    = new WP_Edit_With_AI_Content_Tools();
 		$response = $client->run_conversation( $message, $tools );
 
@@ -78,8 +78,8 @@ class WP_Edit_With_AI_REST_Controller {
 	}
 
 	public function handle_test_connection( WP_REST_Request $request ) {
-		$client  = new WP_Edit_With_AI_Gemini_Client();
-		$results = $client->test_each_key();
+		$client  = WP_Edit_With_AI_Settings::get_active_client();
+		$results = $client->test_connection();
 
 		return new WP_REST_Response( array( 'results' => $results ), 200 );
 	}

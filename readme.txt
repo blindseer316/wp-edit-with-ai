@@ -4,7 +4,7 @@ Tags: ai, chat, editing, content, assistant
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 0.4.2
+Stable tag: 0.5.0
 License: GPLv2 or later
 
 Chat-driven content editing for non-technical WordPress clients. No MCP connector, no external app, no subscription required — just a chat box that makes the edit directly.
@@ -21,6 +21,11 @@ Content types supported, in build order:
 3. Elementor widgets (`_elementor_data`)
 
 == Changelog ==
+
+= 0.5.0 =
+* Added kie.ai (GPT-5.6 Luna) as a second AI provider, with a toggle in Settings to switch between Google Gemini and kie.ai.
+* Added kie.ai API key + model fields to Settings, tested via the same "Test API Connection" button.
+* Useful as a fallback when Gemini's free tier hits rate limits.
 
 = 0.4.2 =
 * Fix: functionCall parts from Gemini's current (thinking-enabled) models carry a thoughtSignature that must be echoed back unmodified on the next turn. The client now preserves the whole part instead of rebuilding it, fixing "Function call is missing a thought_signature" errors.

@@ -12,3 +12,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WP_EDIT_WITH_AI_GEMINI_KEY_1', '' );
 define( 'WP_EDIT_WITH_AI_GEMINI_KEY_2', '' );
+define( 'WP_EDIT_WITH_AI_KIE_API_KEY', '' );
