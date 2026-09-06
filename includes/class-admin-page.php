@@ -63,6 +63,12 @@ class WP_Edit_With_AI_Admin_Page {
 				</div>
 			</div>
 
+			<?php if ( current_user_can( 'manage_options' ) ) : ?>
+				<hr style="margin:32px 0;">
+				<h2>Settings</h2>
+				<?php ( new WP_Edit_With_AI_Settings() )->render_fields(); ?>
+			<?php endif; ?>
+
 			<p class="wp-edit-with-ai-footer">WP Edit With AI &middot; version <?php echo esc_html( WP_EDIT_WITH_AI_VERSION ); ?></p>
 		</div>
 		<?php

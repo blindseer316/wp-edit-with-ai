@@ -3,7 +3,7 @@
  * Plugin Name: WP Edit With AI
  * Plugin URI: https://example.com/wp-edit-with-ai
  * Description: Chat-driven content editing for non-technical clients — no MCP connector, no external app. Settings/dashboard: WP Admin > WP Edit With AI.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Author: Earthbreakdesigns.com
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WP_EDIT_WITH_AI_VERSION', '0.3.0' );
+define( 'WP_EDIT_WITH_AI_VERSION', '0.4.0' );
 define( 'WP_EDIT_WITH_AI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_EDIT_WITH_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
