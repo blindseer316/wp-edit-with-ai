@@ -4,7 +4,7 @@ Tags: ai, chat, editing, content, assistant
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 0.5.1
+Stable tag: 0.6.0
 License: GPLv2 or later
 
 Chat-driven content editing for non-technical WordPress clients. No MCP connector, no external app, no subscription required — just a chat box that makes the edit directly.
@@ -21,6 +21,11 @@ Content types supported, in build order:
 3. Elementor widgets (`_elementor_data`)
 
 == Changelog ==
+
+= 0.6.0 =
+* Added conversation memory: the chat now sends prior turns with every message, so the AI has context instead of treating each message as an isolated request.
+* Added update_post_title tool (previously only post content/body could be edited, not the title).
+* Increased API timeouts (Gemini 30s -> 60s, kie.ai 45s -> 120s) and raised PHP's execution time limit on the chat endpoint, to accommodate slower reasoning-model responses and multi-turn tool loops.
 
 = 0.5.1 =
 * Added a "Thinking…" indicator in the chat while waiting on a reply.

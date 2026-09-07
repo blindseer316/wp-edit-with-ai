@@ -22,6 +22,11 @@ class WP_Edit_With_AI_REST_Controller {
 						'required' => true,
 						'type'     => 'string',
 					),
+					'history' => array(
+						'required' => false,
+						'type'     => 'array',
+						'default'  => array(),
+					),
 				),
 			)
 		);
@@ -46,17 +51,25 @@ class WP_Edit_With_AI_REST_Controller {
 	}
 
 	/**
-	 * Handles a chat turn: runs the Gemini tool-calling loop, which may
-	 * execute one or more WP_Edit_With_AI_Content_Tools calls (find_pages,
-	 * get_page_content, update_page_content) against the live database
-	 * before returning Gemini's final text reply.
+	 * Handles a chat turn: runs the active provider's tool-calling loop,
+	 * which may execute one or more WP_Edit_With_AI_Content_Tools calls
+	 * (find_pages, get_page_content, update_page_content, update_post_title)
+	 * against the live database before returning the model's final text
+	 * reply. `history` carries prior turns from this browser session so the
+	 * model has conversational context (chat has no server-side session
+	 * storage — the client resends history with every message).
 	 */
 	public function handle_chat( WP_REST_Request $request ) {
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 300 ); // best-effort; multi-turn tool loops + a slow provider can run well past PHP's default limit.
+		}
+
 		$message = $request->get_param( 'message' );
+		$history = (array) $request->get_param( 'history' );
 
 		$client   = WP_Edit_With_AI_Settings::get_active_client();
 		$tools    = new WP_Edit_With_AI_Content_Tools();
-		$response = $client->run_conversation( $message, $tools );
+		$response = $client->run_conversation( $message, $history, $tools );
 
 		if ( ! $response['ok'] ) {
 			return new WP_REST_Response(

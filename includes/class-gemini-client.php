@@ -26,14 +26,19 @@ class WP_Edit_With_AI_Gemini_Client {
 	}
 
 	/**
-	 * Runs a full chat turn: sends the user message with the content-tool
-	 * definitions, executes any function calls Gemini requests via
-	 * WP_Edit_With_AI_Content_Tools, feeds the results back, and repeats
+	 * Runs a full chat turn: sends the user message (with any prior turns
+	 * from this conversation, so the model has context) plus the
+	 * content-tool definitions, executes any function calls Gemini requests
+	 * via WP_Edit_With_AI_Content_Tools, feeds the results back, and repeats
 	 * until Gemini returns a final text reply (or MAX_TOOL_TURNS is hit).
 	 *
+	 * @param array $history Prior turns as [{role: 'user'|'assistant', text: string}, ...].
+	 *                       Only user/assistant text is replayed — past tool
+	 *                       calls aren't re-sent, just their outcomes as
+	 *                       already reflected in the assistant's past replies.
 	 * @return array { ok, text?, error?, actions: array of {tool,args,result} }
 	 */
-	public function run_conversation( string $user_message, WP_Edit_With_AI_Content_Tools $tools ): array {
+	public function run_conversation( string $user_message, array $history, WP_Edit_With_AI_Content_Tools $tools ): array {
 		if ( empty( $this->keys ) ) {
 			return array(
 				'ok'      => false,
@@ -42,11 +47,16 @@ class WP_Edit_With_AI_Gemini_Client {
 			);
 		}
 
-		$contents = array(
-			array(
-				'role'  => 'user',
-				'parts' => array( array( 'text' => $user_message ) ),
-			),
+		$contents = array();
+		foreach ( $history as $turn ) {
+			$contents[] = array(
+				'role'  => ( 'assistant' === $turn['role'] ) ? 'model' : 'user',
+				'parts' => array( array( 'text' => (string) $turn['text'] ) ),
+			);
+		}
+		$contents[] = array(
+			'role'  => 'user',
+			'parts' => array( array( 'text' => $user_message ) ),
 		);
 
 		$tool_declarations = array( array( 'function_declarations' => WP_Edit_With_AI_Content_Tools::get_tool_declarations() ) );
@@ -198,7 +208,7 @@ class WP_Edit_With_AI_Gemini_Client {
 			array(
 				'headers' => array( 'Content-Type' => 'application/json' ),
 				'body'    => wp_json_encode( $body ),
-				'timeout' => 30,
+				'timeout' => 60,
 			)
 		);
 

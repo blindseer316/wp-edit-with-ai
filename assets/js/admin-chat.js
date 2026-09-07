@@ -3,6 +3,10 @@
 	const inputEl = document.getElementById( 'wp-edit-with-ai-input' );
 	const sendBtn = document.getElementById( 'wp-edit-with-ai-send' );
 
+	// In-memory only — resets on page reload. Sent back with every message
+	// so the model has context of earlier turns in this chat.
+	const history = [];
+
 	function escapeHtml( str ) {
 		const div = document.createElement( 'div' );
 		div.textContent = str;
@@ -116,12 +120,15 @@
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': window.wpEditWithAI.nonce,
 				},
-				body: JSON.stringify( { message } ),
+				body: JSON.stringify( { message, history } ),
 			} );
 			const data = await response.json();
 			pendingEl.remove();
 			appendActions( data.actions );
-			appendMessage( 'assistant', data.reply || 'No response.' );
+			const reply = data.reply || 'No response.';
+			appendMessage( 'assistant', reply );
+			history.push( { role: 'user', text: message } );
+			history.push( { role: 'assistant', text: reply } );
 		} catch ( err ) {
 			pendingEl.remove();
 			appendMessage( 'assistant', 'Error: could not reach the server.' );

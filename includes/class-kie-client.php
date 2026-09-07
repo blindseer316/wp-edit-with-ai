@@ -32,9 +32,10 @@ class WP_Edit_With_AI_Kie_Client {
 	}
 
 	/**
+	 * @param array $history Prior turns as [{role: 'user'|'assistant', text: string}, ...].
 	 * @return array { ok, text?, error?, actions: array of {tool,args,result} }
 	 */
-	public function run_conversation( string $user_message, WP_Edit_With_AI_Content_Tools $tools ): array {
+	public function run_conversation( string $user_message, array $history, WP_Edit_With_AI_Content_Tools $tools ): array {
 		if ( empty( $this->api_key ) ) {
 			return array(
 				'ok'      => false,
@@ -43,11 +44,22 @@ class WP_Edit_With_AI_Kie_Client {
 			);
 		}
 
-		$input = array(
-			array(
-				'role'    => 'user',
-				'content' => array( array( 'type' => 'input_text', 'text' => $user_message ) ),
-			),
+		$input = array();
+		foreach ( $history as $turn ) {
+			$is_assistant = ( 'assistant' === $turn['role'] );
+			$input[]      = array(
+				'role'    => $is_assistant ? 'assistant' : 'user',
+				'content' => array(
+					array(
+						'type' => $is_assistant ? 'output_text' : 'input_text',
+						'text' => (string) $turn['text'],
+					),
+				),
+			);
+		}
+		$input[] = array(
+			'role'    => 'user',
+			'content' => array( array( 'type' => 'input_text', 'text' => $user_message ) ),
 		);
 
 		$tool_declarations = $this->to_kie_tool_format( WP_Edit_With_AI_Content_Tools::get_tool_declarations() );
@@ -163,7 +175,7 @@ class WP_Edit_With_AI_Kie_Client {
 					'Content-Type'  => 'application/json',
 				),
 				'body'    => wp_json_encode( $body ),
-				'timeout' => 45,
+				'timeout' => 120,
 			)
 		);
 
